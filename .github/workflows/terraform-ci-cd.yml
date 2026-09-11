@@ -1,0 +1,116 @@
+name: "Terraform Infrastructure CI/CD"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "terraform/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  AWS_REGION: "us-east-1"
+  OIDC_ROLE_ARN: "arn:aws:iam::123456789012:role/GitHubActionsTerraformDeploymentRole"
+  TF_WORKING_DIR: "terraform/envs/prod"
+
+jobs:
+  validate-and-security:
+    name: "Lint, Security & Format Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: "v0.50.0"
+
+      - name: Run TFLint
+        run: |
+          tflint --init
+          tflint --recursive
+
+      - name: Run Checkov Static Analysis
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: terraform
+          output_format: cli
+          soft_fail: true
+
+  plan-and-apply:
+    name: "Terraform Plan & Apply"
+    needs: [validate-and-security]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Configure AWS Credentials (OIDC Keyless)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Post Plan to Pull Request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `### Terraform Plan Result
+            #### Environment: \`${process.env.TF_WORKING_DIR}\`
+            *Pushed by: @${{ github.actor }}*
+            *Action: \`${{ github.event_name }}\`*
+
+            \`\`\`hcl
+            Plan generated successfully. Inspect artifacts or pipeline logs for resource diffs.
+            \`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Terraform Apply (Main Branch Only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan
+        working-directory: ${{ env.TF_WORKING_DIR }}

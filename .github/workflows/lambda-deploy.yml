@@ -1,0 +1,67 @@
+name: "Fast Lambda Backend Deployment"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/backend/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: "us-east-1"
+  OIDC_ROLE_ARN: "arn:aws:iam::123456789012:role/GitHubActionsLambdaDeploymentRole"
+  AGGREGATOR_FUNCTION_NAME: "prod-voting-aggregator"
+  RESULTS_FUNCTION_NAME: "prod-voting-results"
+
+jobs:
+  deploy-functions:
+    name: "Package & Update Lambda Handlers"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Backend Unit Tests
+        run: |
+          python -m unittest discover -s tests/unit -p "test_*.py"
+
+      - name: Package Aggregator Lambda
+        run: |
+          cd src/backend/aggregator
+          zip -r /tmp/aggregator.zip . -x "*.pyc" "__pycache__/*"
+
+      - name: Package Results Lambda
+        run: |
+          cd src/backend/results
+          zip -r /tmp/results.zip . -x "*.pyc" "__pycache__/*"
+
+      - name: Configure AWS Credentials (OIDC Keyless)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Update Aggregator Lambda Code via AWS CLI
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.AGGREGATOR_FUNCTION_NAME }} \
+            --zip-file fileb:///tmp/aggregator.zip \
+            --publish
+
+      - name: Update Results Lambda Code via AWS CLI
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.RESULTS_FUNCTION_NAME }} \
+            --zip-file fileb:///tmp/results.zip \
+            --publish

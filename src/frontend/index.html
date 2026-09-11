@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResilientVote // Live Ingestion Scoreboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <div class="branding">
+        <div class="status-indicator live" id="liveIndicator"></div>
+        <h1>RESILIENT<span>VOTE</span></h1>
+        <span class="badge">SERVERLESS INGESTION ENGINE</span>
+      </div>
+      <div class="header-controls">
+        <div class="control-group">
+          <label for="apiEndpoint">API Base URL:</label>
+          <input type="text" id="apiEndpoint" placeholder="https://{api-id}.execute-api.{region}.amazonaws.com" />
+        </div>
+        <button id="pollToggleBtn" class="btn btn-secondary">Pause Polling</button>
+        <button id="refreshBtn" class="btn btn-primary">Refresh Now</button>
+      </div>
+    </header>
+
+    <section class="telemetry-grid">
+      <div class="card stat-card">
+        <div class="stat-label">TOTAL VOTES INGESTED</div>
+        <div class="stat-value" id="totalVotes">0</div>
+        <div class="stat-subtext">Atomic increments across DynamoDB</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-label">REAL-TIME THROUGHPUT</div>
+        <div class="stat-value accent" id="currentRps">0 <span class="unit">RPS</span></div>
+        <div class="stat-subtext">Velocity over 1.0s sliding interval</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-label">CURRENT LEADER</div>
+        <div class="stat-value highlight" id="currentLeader">—</div>
+        <div class="stat-subtext" id="leaderVotes">0 votes recorded</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-label">INGRESS LATENCY (P95)</div>
+        <div class="stat-value success" id="p95Latency">&lt; 15 <span class="unit">ms</span></div>
+        <div class="stat-subtext">Computeless API Gateway proxy</div>
+      </div>
+    </section>
+
+    <main class="main-content">
+      <div class="card leaderboard-card">
+        <div class="card-header">
+          <h2>LIVE CANDIDATE STANDINGS</h2>
+          <div class="header-metadata">
+            <span id="lastUpdated">Last synced: —</span>
+            <span class="pipe">|</span>
+            <span id="teamCount">0 Teams Registered</span>
+          </div>
+        </div>
+
+        <div class="teams-container" id="teamsContainer">
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Connecting to ingestion endpoint...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <section class="action-card card">
+      <div class="action-header">
+        <h3>TEST VOTE INJECTION</h3>
+        <span class="sub-label">Direct API Gateway Service Integration Test</span>
+      </div>
+      <div class="vote-simulator-grid">
+        <button class="vote-btn" data-team="Team Alpha">Vote Alpha</button>
+        <button class="vote-btn" data-team="Team Beta">Vote Beta</button>
+        <button class="vote-btn" data-team="Team Gamma">Vote Gamma</button>
+        <button class="vote-btn" data-team="Team Delta">Vote Delta</button>
+      </div>
+      <div id="voteStatus" class="vote-status-msg"></div>
+    </section>
+
+    <footer class="footer">
+      <p>ResilientVote // Distributed SQS Buffer & In-Memory Lambda Aggregation // AWS Free Tier Optimized</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

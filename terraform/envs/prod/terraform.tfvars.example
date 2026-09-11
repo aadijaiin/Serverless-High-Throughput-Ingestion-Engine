@@ -1,0 +1,12 @@
+aws_region                  = "us-east-1"
+environment                 = "prod"
+table_name                  = "resilient_votes"
+sqs_batch_size              = 100
+sqs_batching_window_seconds = 5
+load_generator_count        = 6
+
+tags = {
+  Project     = "ResilientVote"
+  Environment = "prod"
+  ManagedBy   = "Terraform"
+}
