@@ -97,3 +97,4 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 k6_results.json
+rerunbook.txt
