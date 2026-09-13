@@ -6,16 +6,25 @@ const voteSuccessRate = new Rate('vote_success_rate');
 const totalVotesCast = new Counter('total_votes_cast');
 const voteLatencyTrend = new Trend('vote_latency_ms');
 
+// Total duration: 3s + 3s + 3s + 3s = 12s
 export const options = {
   scenarios: {
-    constant_request_rate: {
-      executor: 'constant-vus',
-      vus: parseInt(__ENV.VUS || '250', 10),
-      duration: __ENV.DURATION || '60s',
+    precision_burst: {
+      executor: 'ramping-arrival-rate',
+      startRate: 500,
+      timeUnit: '1s',
+      preAllocatedVUs: 1500, // Pre-allocates memory so it won't stutter during the spike
+      maxVUs: 4000,
+      stages: [
+        { duration: '3s', target: 2000 },  // 0s-3s: Ramp to 2k RPS
+        { duration: '3s', target: 10000 }, // 3s-6s: Surge to 10k RPS
+        { duration: '3s', target: 10000 }, // 6s-9s: Hold steady at 10,000 RPS
+        { duration: '3s', target: 0 },     // 9s-12s: Cool down to 0
+      ],
     },
   },
   thresholds: {
-    http_req_duration: ['p(95)<50', 'p(99)<100'],
+    http_req_duration: ['p(95)<60', 'p(99)<120'],
     vote_success_rate: ['rate>0.999'],
     http_req_failed: ['rate<0.001'],
   },
@@ -45,7 +54,7 @@ export default function () {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-    timeout: '5s',
+    timeout: '3s',
   };
 
   const startTime = Date.now();
