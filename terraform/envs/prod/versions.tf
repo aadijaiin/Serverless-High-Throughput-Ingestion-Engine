@@ -13,10 +13,10 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "resilientvote-tfstate-prod-978489150575"
-    key            = "voting-engine-v2/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    use_lockfile   = true
+    bucket       = "resilientvote-tfstate-prod-978489150575"
+    key          = "voting-engine-v2/terraform.tfstate"
+    region       = "us-east-1"
+    encrypt      = true
+    use_lockfile = true
   }
 }

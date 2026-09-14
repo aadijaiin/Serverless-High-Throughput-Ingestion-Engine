@@ -114,12 +114,12 @@ resource "aws_cloudwatch_log_group" "results" {
 }
 
 resource "aws_lambda_function" "aggregator" {
-  function_name    = "${var.environment}-voting-aggregator"
-  role             = aws_iam_role.aggregator.arn
-  handler          = "handler.lambda_handler"
-  runtime          = var.lambda_runtime
-  timeout          = var.aggregator_timeout
-  memory_size      = var.aggregator_memory_size
+  function_name = "${var.environment}-voting-aggregator"
+  role          = aws_iam_role.aggregator.arn
+  handler       = "handler.lambda_handler"
+  runtime       = var.lambda_runtime
+  timeout       = var.aggregator_timeout
+  memory_size   = var.aggregator_memory_size
 
   filename         = data.archive_file.aggregator_zip.output_path
   source_code_hash = data.archive_file.aggregator_zip.output_base64sha256
@@ -136,12 +136,12 @@ resource "aws_lambda_function" "aggregator" {
 }
 
 resource "aws_lambda_function" "results" {
-  function_name    = "${var.environment}-voting-results"
-  role             = aws_iam_role.results.arn
-  handler          = "handler.lambda_handler"
-  runtime          = var.lambda_runtime
-  timeout          = var.results_timeout
-  memory_size      = var.results_memory_size
+  function_name = "${var.environment}-voting-results"
+  role          = aws_iam_role.results.arn
+  handler       = "handler.lambda_handler"
+  runtime       = var.lambda_runtime
+  timeout       = var.results_timeout
+  memory_size   = var.results_memory_size
 
   filename         = data.archive_file.results_zip.output_path
   source_code_hash = data.archive_file.results_zip.output_base64sha256
